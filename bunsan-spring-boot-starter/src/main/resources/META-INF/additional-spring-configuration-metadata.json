@@ -1,0 +1,113 @@
+{
+  "groups": [
+    {
+      "name": "bunsan",
+      "type": "com.dmitrymrsh.bunsan.starter.BunsanProperties",
+      "sourceType": "com.dmitrymrsh.bunsan.starter.BunsanProperties"
+    },
+    {
+      "name": "bunsan.weighted-response-time",
+      "type": "com.dmitrymrsh.bunsan.starter.BunsanProperties.WeightedResponseTimeProperties",
+      "sourceType": "com.dmitrymrsh.bunsan.starter.BunsanProperties"
+    },
+    {
+      "name": "bunsan.least-connections",
+      "type": "com.dmitrymrsh.bunsan.starter.BunsanProperties.LeastConnectionsProperties",
+      "sourceType": "com.dmitrymrsh.bunsan.starter.BunsanProperties"
+    },
+    {
+      "name": "bunsan.adaptive",
+      "type": "com.dmitrymrsh.bunsan.starter.BunsanProperties.AdaptiveProperties",
+      "sourceType": "com.dmitrymrsh.bunsan.starter.BunsanProperties"
+    },
+    {
+      "name": "bunsan.adaptive.weights",
+      "type": "com.dmitrymrsh.bunsan.starter.BunsanProperties.AdaptiveProperties.Weights",
+      "sourceType": "com.dmitrymrsh.bunsan.starter.BunsanProperties.AdaptiveProperties"
+    },
+    {
+      "name": "bunsan.discovery",
+      "type": "com.dmitrymrsh.bunsan.starter.BunsanProperties.DiscoveryProperties",
+      "sourceType": "com.dmitrymrsh.bunsan.starter.BunsanProperties"
+    },
+    {
+      "name": "bunsan.discovery.overload-filter",
+      "type": "com.dmitrymrsh.bunsan.starter.BunsanProperties.DiscoveryProperties.OverloadFilterProperties",
+      "sourceType": "com.dmitrymrsh.bunsan.starter.BunsanProperties.DiscoveryProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "bunsan.algorithm",
+      "type": "com.dmitrymrsh.bunsan.starter.BunsanProperties.Algorithm",
+      "description": "Алгоритм балансировки нагрузки. Доступные значения: weighted-response-time, least-connections, adaptive, round-robin, random.",
+      "defaultValue": "round-robin"
+    },
+    {
+      "name": "bunsan.weighted-response-time.ema-alpha",
+      "type": "java.lang.Double",
+      "description": "Коэффициент сглаживания EMA для latency. Диапазон: (0.0, 1.0).",
+      "defaultValue": 0.3
+    },
+    {
+      "name": "bunsan.weighted-response-time.window-size",
+      "type": "java.lang.Integer",
+      "description": "Минимум замеров для активации взвешенного выбора. До набора — round-robin.",
+      "defaultValue": 5
+    },
+    {
+      "name": "bunsan.least-connections.tie-breaking",
+      "type": "com.dmitrymrsh.bunsan.starter.BunsanProperties.LeastConnectionsProperties.TieBreaking",
+      "description": "Стратегия при одинаковом числе соединений: RANDOM или FIRST.",
+      "defaultValue": "random"
+    },
+    {
+      "name": "bunsan.adaptive.metrics-poll-interval",
+      "type": "java.time.Duration",
+      "description": "Интервал опроса /actuator/lb-health каждого инстанса.",
+      "defaultValue": "5s"
+    },
+    {
+      "name": "bunsan.adaptive.weights.cpu",
+      "type": "java.lang.Double",
+      "description": "Вес CPU-нагрузки в формуле score.",
+      "defaultValue": 0.35
+    },
+    {
+      "name": "bunsan.adaptive.weights.heap",
+      "type": "java.lang.Double",
+      "description": "Вес heap-нагрузки в формуле score.",
+      "defaultValue": 0.25
+    },
+    {
+      "name": "bunsan.adaptive.weights.threads",
+      "type": "java.lang.Double",
+      "description": "Вес отношения активных потоков в формуле score.",
+      "defaultValue": 0.20
+    },
+    {
+      "name": "bunsan.adaptive.weights.latency",
+      "type": "java.lang.Double",
+      "description": "Вес нормализованной latency в формуле score.",
+      "defaultValue": 0.20
+    },
+    {
+      "name": "bunsan.discovery.overload-filter.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Включить фильтрацию OUT_OF_SERVICE инстансов на Eureka Server.",
+      "defaultValue": true
+    },
+    {
+      "name": "bunsan.discovery.overload-filter.cpu-threshold",
+      "type": "java.lang.Double",
+      "description": "Порог CPU (0.0–1.0). При превышении — инстанс переходит в OUT_OF_SERVICE.",
+      "defaultValue": 0.80
+    },
+    {
+      "name": "bunsan.discovery.overload-filter.heap-threshold",
+      "type": "java.lang.Double",
+      "description": "Порог heap (0.0–1.0). При превышении — инстанс переходит в OUT_OF_SERVICE.",
+      "defaultValue": 0.85
+    }
+  ]
+}

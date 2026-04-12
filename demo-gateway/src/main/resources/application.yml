@@ -1,0 +1,86 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: demo-gateway
+
+  # ─── Spring Cloud Gateway ─────────────────────────────────────────────────
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            # Все запросы /api/** → lb://demo-service (балансировка через стартер)
+            - id: demo-service-route
+              uri: lb://demo-service
+              predicates:
+                - Path=/api/**
+              filters:
+                # Добавляем заголовок с текущей стратегией для трейсинга
+                - AddRequestHeader=X-LB-Strategy, ${bunsan.algorithm:round-robin}
+
+          # Включить интеграцию с Eureka Discovery
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+
+    # LoadBalancer: кешировать инстансы 5 сек (дефолт 35 сек)
+    loadbalancer:
+      cache:
+        ttl: 5s
+
+# ─── Eureka Client ────────────────────────────────────────────────────────────
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+    registry-fetch-interval-seconds: 5
+  instance:
+    instance-id: ${spring.application.name}:${server.port}
+    prefer-ip-address: true
+
+# ─── bunsan: алгоритм балансировки ─────────────────────────────────────────
+# Значения: weighted-response-time | least-connections | adaptive | round-robin | random
+# Для нагрузочных тестов этот файл переопределяется через переменную среды:
+#   BUNSAN_ALGORITHM=weighted-response-time
+bunsan:
+  algorithm: ${BUNSAN_ALGORITHM:round-robin}
+
+  weighted-response-time:
+    ema-alpha: 0.3
+    window-size: 5
+
+  least-connections:
+    tie-breaking: random
+
+  adaptive:
+    metrics-poll-interval: 5s
+    weights:
+      cpu: 0.35
+      heap: 0.25
+      threads: 0.20
+      latency: 0.20
+
+  discovery:
+    overload-filter:
+      enabled: true
+
+# ─── Actuator ─────────────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+    tags:
+      instance_id: ${spring.application.name}
+
+logging:
+  level:
+    com.dmitrymrsh.bunsan: DEBUG
+    org.springframework.cloud.gateway: INFO

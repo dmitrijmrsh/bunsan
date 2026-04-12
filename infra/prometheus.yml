@@ -1,0 +1,42 @@
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+  external_labels:
+    project: 'bunsan'
+
+scrape_configs:
+
+  # ─── Eureka Server ───────────────────────────────────────────────────────────
+  - job_name: 'eureka-server'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['eureka-server:8761']
+        labels:
+          service: 'eureka-server'
+
+  # ─── Demo Service — все 4 инстанса ──────────────────────────────────────────
+  - job_name: 'demo-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets:
+          - 'demo-service-1:8081'
+          - 'demo-service-2:8082'
+          - 'demo-service-3:8083'
+          - 'demo-service-4:8084'
+    relabel_configs:
+      # Добавляем метку instance_id = host:port для Grafana-дашбордов
+      - source_labels: [__address__]
+        target_label: instance_id
+
+  # ─── Demo Gateway ────────────────────────────────────────────────────────────
+  - job_name: 'demo-gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['demo-gateway:8080']
+        labels:
+          service: 'demo-gateway'
+
+  # ─── Prometheus self-monitoring ──────────────────────────────────────────────
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

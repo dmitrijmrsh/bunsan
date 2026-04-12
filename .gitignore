@@ -1,16 +1,6 @@
-# Compiled class file
+# ─── Build output ─────────────────────────────────────────────────────────────
+target/
 *.class
-
-# Log file
-*.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
 *.jar
 *.war
 *.nar
@@ -19,6 +9,47 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# ─── IDE ──────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.vscode/
+.classpath
+.project
+.settings/
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+spring-shell.log
 hs_err_pid*
 replay_pid*
+
+# ─── BlueJ / J2ME ─────────────────────────────────────────────────────────────
+*.ctxt
+.mtj.tmp/
+
+# ─── Gatling results ──────────────────────────────────────────────────────────
+load-tests/results/
+!load-tests/results/.gitkeep
+
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+.Python
+venv/
+.venv/
+analysis/*.png
+analysis/combined_results.csv
+analysis/percentiles_table.csv
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── CLAUDE ───────────────────────────────────────────────────────────────────
+CLAUDE.md
+/.claude/

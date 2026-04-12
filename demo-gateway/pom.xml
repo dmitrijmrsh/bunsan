@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.dmitrymrsh.bunsan</groupId>
+        <artifactId>spring-cloud-bunsan</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>demo-gateway</artifactId>
+    <name>Demo Gateway</name>
+    <description>
+        Spring Cloud Gateway, использующий bunsan-spring-boot-starter для маршрутизации
+        к demo-service через один из кастомных алгоритмов балансировки.
+        Стартер автоматически регистрирует:
+          - выбранный балансировщик (через bunsan.algorithm),
+          - LatencyTrackingGlobalFilter — обновляет LatencyTracker для WRT и Adaptive балансировщиков,
+          - LoadBalancerMetrics — кастомные метрики Micrometer.
+    </description>
+
+    <dependencies>
+        <!-- Наш стартер — ядро: алгоритмы, метрики, GlobalFilter -->
+        <dependency>
+            <groupId>com.dmitrymrsh.bunsan</groupId>
+            <artifactId>bunsan-spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- Spring Cloud Gateway (включает WebFlux и Netty) -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway</artifactId>
+        </dependency>
+
+        <!-- Регистрация в Eureka + discovery для lb://demo-service -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+
+        <!-- Actuator + Prometheus -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

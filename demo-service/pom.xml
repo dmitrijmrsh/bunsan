@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.dmitrymrsh.bunsan</groupId>
+        <artifactId>spring-cloud-bunsan</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>demo-service</artifactId>
+    <name>Demo Service</name>
+    <description>
+        Простой REST-сервис, запускаемый в нескольких инстансах (demo-service-1..4).
+        Стартер автоматически регистрирует:
+          - OverloadHealthIndicator — переводит инстанс в OUT_OF_SERVICE при перегрузке,
+          - LbHealthEndpoint (/actuator/lb-health) — JSON с CPU/heap/threads для AdaptiveLoadBalancer.
+        Инстанс с переменной окружения STRESS_ENABLED=true имитирует деградацию через CPU-нагрузку.
+    </description>
+
+    <dependencies>
+        <!-- Наш стартер — регистрирует OverloadHealthIndicator и LbHealthEndpoint -->
+        <dependency>
+            <groupId>com.dmitrymrsh.bunsan</groupId>
+            <artifactId>bunsan-spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- REST-контроллер (servlet stack достаточен для demo-service) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Регистрация в Eureka -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+
+        <!-- Actuator + Prometheus -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

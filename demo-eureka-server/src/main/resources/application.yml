@@ -1,0 +1,49 @@
+server:
+  port: 8761
+
+spring:
+  application:
+    name: eureka-server
+
+# ─── Eureka Server ────────────────────────────────────────────────────────────
+eureka:
+  client:
+    # Этот сервер не регистрируется сам в себе и не тянет реестр
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  server:
+    # Не ждать первые heartbeats при старте (ускоряет демо-запуск)
+    wait-time-in-ms-when-sync-empty: 0
+    # В демо отключаем self-preservation: инстансы удаляются немедленно
+    # при прекращении heartbeat (а не «замораживаются» по алгоритму Eureka)
+    enable-self-preservation: false
+
+# ─── bunsan: фильтр перегруженных инстансов ────────────────────────────────
+bunsan:
+  discovery:
+    overload-filter:
+      enabled: true
+      cpu-threshold: 0.80
+      heap-threshold: 0.85
+
+# ─── Actuator ─────────────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info
+  endpoint:
+    health:
+      show-details: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+logging:
+  level:
+    com.dmitrymrsh.bunsan: DEBUG
+    com.netflix.eureka: WARN
+    com.netflix.discovery: WARN

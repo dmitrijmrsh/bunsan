@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.0</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.dmitrymrsh.bunsan</groupId>
+    <artifactId>spring-cloud-bunsan</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>Spring Cloud Custom Load Balancer</name>
+
+    <description>
+        Дипломный проект: Spring Boot Starter, расширяющий Spring Cloud LoadBalancer
+        тремя кастомными алгоритмами балансировки и фильтром перегруженных инстансов.
+    </description>
+
+    <modules>
+        <module>bunsan-spring-boot-starter</module>
+        <module>demo-eureka-server</module>
+        <module>demo-service</module>
+        <module>demo-gateway</module>
+        <module>load-tests</module>
+    </modules>
+
+    <properties>
+        <java.version>25</java.version>
+        <maven.compiler.release>25</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <!-- Spring Cloud BOM -->
+        <spring-cloud.version>2025.0.0</spring-cloud.version>
+
+        <!-- Gatling (Scala DSL) -->
+        <gatling.version>3.13.5</gatling.version>
+        <gatling-plugin.version>4.9.6</gatling-plugin.version>
+        <scala-maven-plugin.version>4.9.2</scala-maven-plugin.version>
+        <scala.version>2.13.14</scala.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Cloud BOM — импортируется поверх spring-boot-starter-parent -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Локальная библиотека — используется в demo-модулях -->
+            <dependency>
+                <groupId>com.dmitrymrsh.bunsan</groupId>
+                <artifactId>bunsan-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- Gatling -->
+            <dependency>
+                <groupId>io.gatling.highcharts</groupId>
+                <artifactId>gatling-charts-highcharts</artifactId>
+                <version>${gatling.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <release>25</release>
+                        <compilerArgs>
+                            <!-- Разрешить preview-фичи Java 25 при необходимости -->
+                            <!-- <arg>&#45;&#45;enable-preview</arg> -->
+                        </compilerArgs>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <includes>
+                            <include>**/*Test.java</include>
+                        </includes>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <configuration>
+                        <includes>
+                            <include>**/*IT.java</include>
+                        </includes>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

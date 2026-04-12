@@ -1,0 +1,14 @@
+apiVersion: 1
+
+providers:
+  - name: Custom LB Dashboards
+    orgId: 1
+    folder: "Custom LB"
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

@@ -1,0 +1,60 @@
+server:
+  # Порт задаётся через переменную окружения PORT при запуске нескольких инстансов.
+  # docker-compose пробрасывает PORT=8081, 8082, 8083, 8084 для demo-service-1..4
+  port: ${PORT:8081}
+
+spring:
+  application:
+    name: demo-service
+
+# ─── Eureka Client ────────────────────────────────────────────────────────────
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+    # Обновлять кэш реестра каждые 5 сек (дефолт 30 сек — слишком медленно для демо)
+    registry-fetch-interval-seconds: 5
+    health-check:
+      enabled: true
+  instance:
+    # Уникальный ID инстанса включает порт для разграничения нескольких инстансов
+    instance-id: ${spring.application.name}:${server.port}
+    # Heartbeat каждые 10 сек (дефолт 30 сек)
+    lease-renewal-interval-in-seconds: 10
+    # Инстанс считается мёртвым через 30 сек без heartbeat
+    lease-expiration-duration-in-seconds: 30
+    prefer-ip-address: true
+    # URL health-check — Eureka использует это для отслеживания статуса
+    health-check-url-path: /actuator/health
+
+# ─── bunsan: пороги для OverloadHealthIndicator ────────────────────────────
+bunsan:
+  discovery:
+    overload-filter:
+      enabled: true
+      cpu-threshold: 0.80    # 80% CPU → OUT_OF_SERVICE
+      heap-threshold: 0.85   # 85% heap → OUT_OF_SERVICE
+
+# ─── Actuator ─────────────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        # lb-health — кастомный эндпоинт для AdaptiveLoadBalancer
+        include: health,prometheus,info,lb-health
+  endpoint:
+    health:
+      # Показывать детали (CPU/heap) в ответе /actuator/health
+      show-details: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  metrics:
+    tags:
+      # Тег instanceId добавляется ко всем метрикам для разграничения инстансов в Grafana
+      instance_id: ${spring.application.name}:${server.port}
+
+logging:
+  level:
+    com.dmitrymrsh.bunsan: DEBUG

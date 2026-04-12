@@ -1,0 +1,190 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+#  Spring Cloud Custom LB — полный демо-стенд
+#
+#  Запуск:  docker compose -f infra/docker-compose.yml up -d
+#  Стоп:    docker compose -f infra/docker-compose.yml down
+#
+#  Сервисы:
+#    eureka-server      — http://localhost:8761
+#    demo-service-1..4  — порты 8081-8084
+#    demo-gateway       — http://localhost:8080  (точка входа)
+#    prometheus         — http://localhost:9090
+#    grafana            — http://localhost:3000  (admin/admin)
+#
+#  Алгоритм балансировки задаётся через переменную BUNSAN_ALGORITHM:
+#    BUNSAN_ALGORITHM=weighted-response-time docker compose up -d demo-gateway
+# ═══════════════════════════════════════════════════════════════════════════════
+
+networks:
+  bunsan-net:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:
+
+# ─── Общие настройки для сервисов-приложений ──────────────────────────────────
+x-service-defaults: &service-defaults
+  networks:
+    - bunsan-net
+  restart: unless-stopped
+
+services:
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  #  Eureka Server
+  # ─────────────────────────────────────────────────────────────────────────────
+  eureka-server:
+    <<: *service-defaults
+    build:
+      context: ..
+      dockerfile: demo-eureka-server/Dockerfile
+    image: bunsan/eureka-server:latest
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  #  Demo Service — 4 инстанса
+  #  demo-service-4 запущен с STRESS_ENABLED=true для имитации деградации
+  # ─────────────────────────────────────────────────────────────────────────────
+  demo-service-1:
+    <<: *service-defaults
+    build:
+      context: ..
+      dockerfile: demo-service/Dockerfile
+    image: bunsan/demo-service:latest
+    container_name: demo-service-1
+    ports:
+      - "8081:8081"
+    environment:
+      PORT: 8081
+      STRESS_ENABLED: "false"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  demo-service-2:
+    <<: *service-defaults
+    build:
+      context: ..
+      dockerfile: demo-service/Dockerfile
+    image: bunsan/demo-service:latest
+    container_name: demo-service-2
+    ports:
+      - "8082:8082"
+    environment:
+      PORT: 8082
+      STRESS_ENABLED: "false"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  demo-service-3:
+    <<: *service-defaults
+    build:
+      context: ..
+      dockerfile: demo-service/Dockerfile
+    image: bunsan/demo-service:latest
+    container_name: demo-service-3
+    ports:
+      - "8083:8083"
+    environment:
+      PORT: 8083
+      STRESS_ENABLED: "false"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  demo-service-4:
+    <<: *service-defaults
+    build:
+      context: ..
+      dockerfile: demo-service/Dockerfile
+    image: bunsan/demo-service:latest
+    container_name: demo-service-4
+    ports:
+      - "8084:8084"
+    environment:
+      PORT: 8084
+      # Этот инстанс имитирует деградацию: только искусственная задержка ответов.
+      # STRESS_WORKERS намеренно не выставлен — CPU остаётся низким, чтобы instance-4
+      # не уходил в OUT_OF_SERVICE через OverloadFilter и оставался в реестре Eureka.
+      # Алгоритмы видят его как медленный (200ms), но доступный → разница между ними заметна.
+      STRESS_ENABLED: "false"
+      STRESS_DELAY_MS: "500"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  #  Demo Gateway — точка входа для клиентских запросов
+  # ─────────────────────────────────────────────────────────────────────────────
+  demo-gateway:
+    <<: *service-defaults
+    build:
+      context: ..
+      dockerfile: demo-gateway/Dockerfile
+    image: bunsan/demo-gateway:latest
+    container_name: demo-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      # Алгоритм балансировки: weighted-response-time | least-connections | adaptive | round-robin | random
+      BUNSAN_ALGORITHM: ${BUNSAN_ALGORITHM:-round-robin}
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  #  Prometheus — сбор метрик
+  # ─────────────────────────────────────────────────────────────────────────────
+  prometheus:
+    <<: *service-defaults
+    image: prom/prometheus:v2.52.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=7d"
+      - "--web.enable-lifecycle"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  #  Grafana — визуализация метрик
+  # ─────────────────────────────────────────────────────────────────────────────
+  grafana:
+    <<: *service-defaults
+    image: grafana/grafana:10.4.2
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # Анонимный доступ для демо (удалить в production)
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    depends_on:
+      - prometheus
