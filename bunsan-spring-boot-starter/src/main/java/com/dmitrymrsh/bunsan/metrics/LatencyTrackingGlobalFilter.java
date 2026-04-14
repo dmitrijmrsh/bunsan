@@ -2,7 +2,7 @@ package com.dmitrymrsh.bunsan.metrics;
 
 import com.dmitrymrsh.bunsan.algorithm.ConnectionTracker;
 import com.dmitrymrsh.bunsan.algorithm.LatencyTracker;
-import io.micrometer.core.instrument.MeterRegistry;
+import com.dmitrymrsh.bunsan.starter.BunsanProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.client.ServiceInstance;
@@ -57,23 +57,27 @@ public class LatencyTrackingGlobalFilter implements GlobalFilter, Ordered {
 
     private final LatencyTracker latencyTracker;
     private final ConnectionTracker connectionTracker;
-    private final MeterRegistry meterRegistry;
+    private final LoadBalancerMetrics lbMetrics;
+    private final String strategyName;
 
     /**
      * Создаёт фильтр с зависимостями из родительского контекста.
      *
      * @param latencyTracker    разделяемый EMA-трекер latency
      * @param connectionTracker разделяемый трекер in-flight запросов
-     * @param meterRegistry     реестр метрик Micrometer
+     * @param lbMetrics         публикатор кастомных метрик балансировщика
+     * @param properties        настройки стартера (для определения текущей стратегии)
      */
     public LatencyTrackingGlobalFilter(
         LatencyTracker latencyTracker,
         ConnectionTracker connectionTracker,
-        MeterRegistry meterRegistry
+        LoadBalancerMetrics lbMetrics,
+        BunsanProperties properties
     ) {
         this.latencyTracker = latencyTracker;
         this.connectionTracker = connectionTracker;
-        this.meterRegistry = meterRegistry;
+        this.lbMetrics = lbMetrics;
+        this.strategyName = properties.getAlgorithm().name().toLowerCase().replace('_', '-');
     }
 
     /**
@@ -113,16 +117,8 @@ public class LatencyTrackingGlobalFilter implements GlobalFilter, Ordered {
                 // 2. Декрементируем in-flight (для LeastConnections)
                 connectionTracker.decrement(instanceId);
 
-                // 3. Публикуем метрики
-                meterRegistry.counter(
-                    "bunsan_requests_total",
-                    "instance_id", instanceId,
-                    "strategy", resolveStrategy(exchange)
-                ).increment();
-
-                meterRegistry.timer("bunsan_response_time_seconds",
-                    "instance_id", instanceId
-                ).record(elapsed, java.util.concurrent.TimeUnit.MILLISECONDS);
+                // 3. Публикуем метрики (с histogram-бакетами для histogram_quantile)
+                lbMetrics.recordRequest(instanceId, resolveStrategy(exchange), elapsed);
 
                 log.debug("Request completed: instanceId={} elapsed={}ms signal={}",
                     instanceId, elapsed, signal);
@@ -130,12 +126,11 @@ public class LatencyTrackingGlobalFilter implements GlobalFilter, Ordered {
     }
 
     /**
-     * Определяет название стратегии балансировки из атрибутов exchange.
-     * Возвращает {@code unknown} если атрибут отсутствует.
+     * Возвращает название текущей стратегии балансировки.
+     * Определяется один раз при создании фильтра из {@link BunsanProperties}.
      */
     private String resolveStrategy(ServerWebExchange exchange) {
-        Object strategy = exchange.getAttribute("bunsanStrategy");
-        return strategy instanceof String s ? s : "unknown";
+        return strategyName;
     }
 
     @Override

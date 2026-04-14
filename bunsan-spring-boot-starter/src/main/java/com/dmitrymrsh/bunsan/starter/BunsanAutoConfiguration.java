@@ -205,10 +205,11 @@ public class BunsanAutoConfiguration {
         public com.dmitrymrsh.bunsan.metrics.LatencyTrackingGlobalFilter latencyTrackingGlobalFilter(
             LatencyTracker latencyTracker,
             ConnectionTracker connectionTracker,
-            MeterRegistry meterRegistry
+            com.dmitrymrsh.bunsan.metrics.LoadBalancerMetrics lbMetrics,
+            BunsanProperties properties
         ) {
             return new com.dmitrymrsh.bunsan.metrics.LatencyTrackingGlobalFilter(
-                latencyTracker, connectionTracker, meterRegistry);
+                latencyTracker, connectionTracker, lbMetrics, properties);
         }
     }
 }

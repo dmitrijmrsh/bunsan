@@ -54,6 +54,9 @@ management:
     tags:
       # Тег instanceId добавляется ко всем метрикам для разграничения инстансов в Grafana
       instance_id: ${spring.application.name}:${server.port}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
 
 logging:
   level:

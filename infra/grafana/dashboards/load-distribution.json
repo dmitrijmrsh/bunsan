@@ -6,27 +6,59 @@
   "schemaVersion": 39,
   "version": 1,
   "timezone": "browser",
-  "time": { "from": "now-15m", "to": "now" },
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
   "panels": [
     {
       "id": 1,
       "title": "Requests Rate by Instance (rps)",
       "type": "timeseries",
-      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 9 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 9
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "custom": { "lineWidth": 2, "fillOpacity": 10, "stacking": { "mode": "normal" } }
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "stacking": {
+              "mode": "normal"
+            }
+          }
         },
         "overrides": []
       },
-      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] } },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        }
+      },
       "targets": [
         {
           "expr": "rate(bunsan_requests_total[1m])",
           "legendFormat": "{{instance_id}} / {{strategy}}",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
         }
       ]
     },
@@ -34,18 +66,48 @@
       "id": 2,
       "title": "Total Requests per Instance (last 5m)",
       "type": "bargauge",
-      "gridPos": { "x": 0, "y": 9, "w": 12, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
-        "defaults": { "unit": "short", "thresholds": { "steps": [{"value": 0, "color": "blue"}] }, "custom": {} },
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "steps": [
+              {
+                "value": 0,
+                "color": "blue"
+              }
+            ]
+          },
+          "custom": {}
+        },
         "overrides": []
       },
-      "options": { "reduceOptions": { "calcs": ["sum"] }, "orientation": "horizontal", "displayMode": "gradient" },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ]
+        },
+        "orientation": "horizontal",
+        "displayMode": "gradient"
+      },
       "targets": [
         {
           "expr": "increase(bunsan_requests_total[5m])",
           "legendFormat": "{{instance_id}}",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
         }
       ]
     },
@@ -53,15 +115,38 @@
       "id": 3,
       "title": "Filtered (OUT_OF_SERVICE) Events",
       "type": "timeseries",
-      "gridPos": { "x": 12, "y": 9, "w": 12, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }, "overrides": [] },
-      "options": { "tooltip": { "mode": "multi" } },
+      "gridPos": {
+        "x": 12,
+        "y": 9,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
       "targets": [
         {
           "expr": "rate(bunsan_instance_filtered_total[1m])",
           "legendFormat": "Filtered: {{instance_id}}",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
         }
       ]
     }
@@ -72,7 +157,11 @@
         "name": "DS_PROMETHEUS",
         "type": "datasource",
         "pluginId": "prometheus",
-        "current": { "text": "Prometheus", "value": "Prometheus" }
+        "current": {
+          "text": "Prometheus",
+          "value": "prometheus"
+        },
+        "query": "prometheus"
       }
     ]
   }

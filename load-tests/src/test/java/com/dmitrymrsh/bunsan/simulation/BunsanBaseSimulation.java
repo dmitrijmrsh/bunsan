@@ -11,7 +11,7 @@ import static io.gatling.javaapi.http.HttpDsl.*;
 /**
  * Базовый класс Gatling-симуляций для сравнения алгоритмов балансировки.
  *
- * <p>Сценарий (из CLAUDE.md):
+ * <p>Сценарий:
  * <ul>
  *   <li>Phase 1 — Warmup        : 2 мин, нарастание 1 → TARGET_RPS</li>
  *   <li>Phase 2 — Stable Load   : 5 мин, постоянная нагрузка TARGET_RPS</li>

@@ -6,21 +6,55 @@
   "schemaVersion": 39,
   "version": 1,
   "timezone": "browser",
-  "time": { "from": "now-15m", "to": "now" },
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
   "panels": [
     {
       "id": 1,
       "title": "p50 Response Time (ms) — client-side (gateway)",
       "type": "timeseries",
-      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } }, "overrides": [] },
-      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "lastNotNull"] } },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "lineWidth": 2
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ]
+        }
+      },
       "targets": [
         {
           "expr": "histogram_quantile(0.50, rate(bunsan_response_time_seconds_bucket[1m])) * 1000",
           "legendFormat": "p50 — {{instance_id}}",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
         }
       ]
     },
@@ -28,15 +62,38 @@
       "id": 2,
       "title": "p95 Response Time (ms)",
       "type": "timeseries",
-      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } }, "overrides": [] },
-      "options": { "tooltip": { "mode": "multi" } },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "lineWidth": 2
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
       "targets": [
         {
           "expr": "histogram_quantile(0.95, rate(bunsan_response_time_seconds_bucket[1m])) * 1000",
           "legendFormat": "p95 — {{instance_id}}",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
         }
       ]
     },
@@ -44,15 +101,38 @@
       "id": 3,
       "title": "p99 Response Time (ms)",
       "type": "timeseries",
-      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } }, "overrides": [] },
-      "options": { "tooltip": { "mode": "multi" } },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "lineWidth": 2
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
       "targets": [
         {
           "expr": "histogram_quantile(0.99, rate(bunsan_response_time_seconds_bucket[1m])) * 1000",
           "legendFormat": "p99 — {{instance_id}}",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
         }
       ]
     },
@@ -60,15 +140,38 @@
       "id": 4,
       "title": "Server-side Latency p95 (demo-service /actuator/prometheus)",
       "type": "timeseries",
-      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } }, "overrides": [] },
-      "options": { "tooltip": { "mode": "multi" } },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "lineWidth": 2
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
       "targets": [
         {
           "expr": "histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{uri=\"/api/hello\"}[1m])) * 1000",
           "legendFormat": "server p95 — {{instance_id}}",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
         }
       ]
     }
@@ -79,7 +182,11 @@
         "name": "DS_PROMETHEUS",
         "type": "datasource",
         "pluginId": "prometheus",
-        "current": { "text": "Prometheus", "value": "Prometheus" }
+        "current": {
+          "text": "Prometheus",
+          "value": "prometheus"
+        },
+        "query": "prometheus"
       }
     ]
   }
