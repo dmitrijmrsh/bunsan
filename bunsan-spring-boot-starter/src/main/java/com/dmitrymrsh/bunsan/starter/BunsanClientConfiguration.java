@@ -5,6 +5,7 @@ import com.dmitrymrsh.bunsan.algorithm.ConnectionTracker;
 import com.dmitrymrsh.bunsan.algorithm.LatencyTracker;
 import com.dmitrymrsh.bunsan.algorithm.LeastConnectionsLoadBalancer;
 import com.dmitrymrsh.bunsan.algorithm.WeightedResponseTimeLoadBalancer;
+import com.dmitrymrsh.bunsan.metrics.LoadBalancerMetrics;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.cloud.client.ServiceInstance;
@@ -57,7 +58,8 @@ public class BunsanClientConfiguration {
         BunsanProperties properties,
         ObjectProvider<LatencyTracker> latencyTrackerProvider,
         ObjectProvider<ConnectionTracker> connectionTrackerProvider,
-        ObjectProvider<MeterRegistry> meterRegistryProvider
+        ObjectProvider<MeterRegistry> meterRegistryProvider,
+        ObjectProvider<LoadBalancerMetrics> lbMetricsProvider
     ) {
         String serviceId = environment.getProperty(LoadBalancerClientFactory.PROPERTY_NAME);
         ObjectProvider<ServiceInstanceListSupplier> supplierProvider =
@@ -69,6 +71,7 @@ public class BunsanClientConfiguration {
                 supplierProvider,
                 serviceId,
                 latencyTrackerProvider.getObject(),
+                lbMetricsProvider.getObject(),
                 properties.getWeightedResponseTime()
             );
 

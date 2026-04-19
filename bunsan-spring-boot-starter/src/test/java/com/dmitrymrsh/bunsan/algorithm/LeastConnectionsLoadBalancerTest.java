@@ -24,6 +24,7 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 /**
@@ -64,7 +65,7 @@ class LeastConnectionsLoadBalancerTest {
         properties = new LeastConnectionsProperties();
         properties.setTieBreaking(TieBreaking.RANDOM);
 
-        when(supplierProvider.getIfAvailable(any())).thenReturn(supplier);
+        lenient().when(supplierProvider.getIfAvailable(any())).thenReturn(supplier);
 
         loadBalancer = new LeastConnectionsLoadBalancer(
             supplierProvider, SERVICE_ID, connectionTracker, meterRegistry, properties

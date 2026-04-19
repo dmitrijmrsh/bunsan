@@ -1,0 +1,135 @@
+#cloud-config
+
+# Пароль для доступа через серийную консоль (SSH-ключ может быть заблокирован OS Login).
+chpasswd:
+  list: |
+    ubuntu:Bunsan2026!
+  expire: false
+
+write_files:
+  # ─── Prometheus: конфиг с реальными IP-адресами ВМ ─────────────────────────
+  - path: /opt/prometheus/prometheus.yml
+    owner: root:root
+    permissions: '0644'
+    content: |
+      global:
+        scrape_interval:     15s
+        evaluation_interval: 15s
+        external_labels:
+          project: 'bunsan'
+
+      scrape_configs:
+
+        - job_name: 'eureka-server'
+          metrics_path: '/actuator/prometheus'
+          static_configs:
+            - targets: ['${eureka_host}:8761']
+              labels:
+                service: 'eureka-server'
+
+        - job_name: 'demo-service'
+          metrics_path: '/actuator/prometheus'
+          static_configs:
+            - targets:
+      %{~ for host in demo_service_hosts ~}
+                - '${host}:8081'
+      %{~ endfor ~}
+          relabel_configs:
+            # instance_id берётся из метки instance_id тэга Micrometer
+            # (demo-service-N), а не из __address__.
+            - source_labels: [__address__]
+              target_label: vm_address
+
+        - job_name: 'demo-gateway'
+          metrics_path: '/actuator/prometheus'
+          static_configs:
+            - targets: ['${gateway_host}:8080']
+              labels:
+                service: 'demo-gateway'
+
+        - job_name: 'prometheus'
+          static_configs:
+            - targets: ['localhost:9090']
+
+  # ─── Grafana: источник данных Prometheus ────────────────────────────────────
+  - path: /opt/grafana/provisioning/datasources/prometheus.yml
+    owner: root:root
+    permissions: '0644'
+    content: |
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          access: proxy
+          url: http://prometheus:9090
+          isDefault: true
+          editable: false
+
+  # ─── Grafana: провижининг дашбордов ─────────────────────────────────────────
+  - path: /opt/grafana/provisioning/dashboards/dashboards.yml
+    owner: root:root
+    permissions: '0644'
+    content: |
+      apiVersion: 1
+      providers:
+        - name: bunsan
+          type: file
+          disableDeletion: false
+          updateIntervalSeconds: 30
+          options:
+            path: /var/lib/grafana/dashboards
+
+  # ─── Дашборды Grafana (встроены как base64) ──────────────────────────────────
+  - path: /opt/grafana/dashboards/load-distribution.json
+    owner: root:root
+    permissions: '0644'
+    encoding: b64
+    content: ${load_distribution_b64}
+
+  - path: /opt/grafana/dashboards/latency-by-instance.json
+    owner: root:root
+    permissions: '0644'
+    encoding: b64
+    content: ${latency_by_instance_b64}
+
+  - path: /opt/grafana/dashboards/instance-health.json
+    owner: root:root
+    permissions: '0644'
+    encoding: b64
+    content: ${instance_health_b64}
+
+  - path: /opt/grafana/dashboards/balancer-internals.json
+    owner: root:root
+    permissions: '0644'
+    encoding: b64
+    content: ${balancer_internals_b64}
+
+runcmd:
+  # Общая сеть — Grafana обращается к Prometheus по имени контейнера.
+  - docker network create observability || true
+  - >
+    docker run -d
+    --name prometheus
+    --network observability
+    --restart=always
+    -p 9090:9090
+    -v /opt/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    -v prometheus-data:/prometheus
+    prom/prometheus:v2.52.0
+    --config.file=/etc/prometheus/prometheus.yml
+    --storage.tsdb.retention.time=7d
+    --web.enable-lifecycle
+  - >
+    docker run -d
+    --name grafana
+    --network observability
+    --restart=always
+    -p 3000:3000
+    -e GF_AUTH_ANONYMOUS_ENABLED=true
+    -e GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    -e GF_AUTH_DISABLE_LOGIN_FORM=false
+    -e GF_SECURITY_ADMIN_PASSWORD=admin
+    -v /opt/grafana/provisioning:/etc/grafana/provisioning:ro
+    -v /opt/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    -v grafana-data:/var/lib/grafana
+    grafana/grafana:10.4.2

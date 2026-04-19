@@ -1,5 +1,6 @@
 package com.dmitrymrsh.bunsan.algorithm;
 
+import com.dmitrymrsh.bunsan.metrics.LoadBalancerMetrics;
 import com.dmitrymrsh.bunsan.starter.BunsanProperties.WeightedResponseTimeProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +50,7 @@ public class WeightedResponseTimeLoadBalancer implements ReactorServiceInstanceL
     private final ObjectProvider<ServiceInstanceListSupplier> serviceInstanceListSupplierProvider;
     private final String serviceId;
     private final LatencyTracker latencyTracker;
+    private final LoadBalancerMetrics lbMetrics;
     private final WeightedResponseTimeProperties properties;
 
     /** Round-robin счётчик для fallback-режима (пока не набран window-size). */
@@ -60,17 +62,20 @@ public class WeightedResponseTimeLoadBalancer implements ReactorServiceInstanceL
      * @param serviceInstanceListSupplierProvider поставщик инстансов сервиса
      * @param serviceId                           имя сервиса (например, {@code demo-service})
      * @param latencyTracker                      разделяемый трекер EMA-latency
+     * @param lbMetrics                           публикатор кастомных метрик балансировщика
      * @param properties                          настройки алгоритма
      */
     public WeightedResponseTimeLoadBalancer(
         ObjectProvider<ServiceInstanceListSupplier> serviceInstanceListSupplierProvider,
         String serviceId,
         LatencyTracker latencyTracker,
+        LoadBalancerMetrics lbMetrics,
         WeightedResponseTimeProperties properties
     ) {
         this.serviceInstanceListSupplierProvider = serviceInstanceListSupplierProvider;
         this.serviceId = serviceId;
         this.latencyTracker = latencyTracker;
+        this.lbMetrics = lbMetrics;
         this.properties = properties;
     }
 
@@ -130,6 +135,7 @@ public class WeightedResponseTimeLoadBalancer implements ReactorServiceInstanceL
             double latency = Math.max(latencyTracker.getAvgLatency(instances.get(i).getInstanceId()), 0.1);
             weights[i] = 1.0 / latency;
             totalWeight += weights[i];
+            lbMetrics.recordInstanceWeight(instances.get(i).getInstanceId(), weights[i]);
         }
 
         double random = ThreadLocalRandom.current().nextDouble(totalWeight);

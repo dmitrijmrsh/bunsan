@@ -1,5 +1,6 @@
 package com.dmitrymrsh.bunsan.algorithm;
 
+import com.dmitrymrsh.bunsan.metrics.LoadBalancerMetrics;
 import com.dmitrymrsh.bunsan.starter.BunsanProperties.WeightedResponseTimeProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +24,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 /**
@@ -45,6 +47,9 @@ class WeightedResponseTimeLoadBalancerTest {
     @Mock
     private ServiceInstanceListSupplier supplier;
 
+    @Mock
+    private LoadBalancerMetrics lbMetrics;
+
     private LatencyTracker latencyTracker;
     private WeightedResponseTimeProperties properties;
     private WeightedResponseTimeLoadBalancer loadBalancer;
@@ -61,10 +66,10 @@ class WeightedResponseTimeLoadBalancerTest {
 
         latencyTracker = new LatencyTracker(properties.getEmaAlpha(), properties.getWindowSize());
 
-        when(supplierProvider.getIfAvailable(any())).thenReturn(supplier);
+        lenient().when(supplierProvider.getIfAvailable(any())).thenReturn(supplier);
 
         loadBalancer = new WeightedResponseTimeLoadBalancer(
-            supplierProvider, SERVICE_ID, latencyTracker, properties
+            supplierProvider, SERVICE_ID, latencyTracker, lbMetrics, properties
         );
     }
 

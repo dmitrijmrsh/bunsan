@@ -1,0 +1,17 @@
+# State и кэши Terraform — содержат секреты и метаданные облака.
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Реальные значения переменных с чувствительными данными.
+*.auto.tfvars
+*.auto.tfvars.json
+secrets.tfvars
+
+# Сохранённые планы.
+*.tfplan
+
+# Crash-логи Terraform.
+crash.log
+crash.*.log

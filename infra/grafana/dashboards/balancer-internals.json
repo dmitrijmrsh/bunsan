@@ -1,4 +1,4 @@
-f v{
+{
   "title": "Balancer Internals",
   "uid": "bunsan-internals",
   "description": "Внутренние метрики балансировщика: веса WRT, score Adaptive, in-flight LeastConnections",

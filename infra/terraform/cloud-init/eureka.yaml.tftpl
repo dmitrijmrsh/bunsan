@@ -1,0 +1,62 @@
+#cloud-config
+
+write_files:
+  - path: /config/application.yml
+    owner: root:root
+    permissions: '0644'
+    content: |
+      server:
+        port: 8761
+
+      spring:
+        application:
+          name: eureka-server
+
+      eureka:
+        client:
+          register-with-eureka: false
+          fetch-registry: false
+          service-url:
+            defaultZone: http://localhost:8761/eureka/
+        server:
+          # Не ждать heartbeats при старте — ускоряет готовность в демо-окружении.
+          wait-time-in-ms-when-sync-empty: 0
+          # Self-preservation отключён: инстансы удаляются немедленно
+          # при прекращении heartbeat (без «заморозки» по алгоритму Eureka).
+          enable-self-preservation: false
+
+      bunsan:
+        discovery:
+          overload-filter:
+            enabled: ${filter_enabled}
+            cpu-threshold: ${cpu_threshold}
+            heap-threshold: ${heap_threshold}
+
+      management:
+        endpoints:
+          web:
+            exposure:
+              include: health,prometheus,info
+        endpoint:
+          health:
+            show-details: always
+        prometheus:
+          metrics:
+            export:
+              enabled: true
+
+      logging:
+        level:
+          com.dmitrymrsh.bunsan: INFO
+          com.netflix.eureka: WARN
+          com.netflix.discovery: WARN
+
+runcmd:
+  - >
+    docker run -d
+    --name eureka-server
+    --restart=always
+    -p 8761:8761
+    -v /config/application.yml:/config/application.yml:ro
+    -e SPRING_CONFIG_LOCATION=file:/config/application.yml
+    ${image}

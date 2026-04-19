@@ -1,0 +1,78 @@
+#cloud-config
+
+chpasswd:
+  list: |
+    ubuntu:Bunsan2026!
+  expire: false
+
+write_files:
+  - path: /config/application.yml
+    owner: root:root
+    permissions: '0644'
+    content: |
+      server:
+        port: 8081
+
+      spring:
+        application:
+          name: demo-service
+
+      eureka:
+        client:
+          service-url:
+            defaultZone: http://${eureka_host}:8761/eureka/
+          # Обновлять кэш реестра каждые 5 сек (дефолт 30 сек — слишком медленно для демо).
+          registry-fetch-interval-seconds: 5
+          health-check:
+            enabled: true
+        instance:
+          # Уникальный ID: demo-service-<N>. Каждый инстанс — отдельная ВМ,
+          # порт у всех одинаковый (8081), поэтому для уникальности используем индекс.
+          instance-id: demo-service-${instance_index}
+          prefer-ip-address: true
+          # Heartbeat каждые 10 сек (дефолт 30 сек).
+          lease-renewal-interval-in-seconds: 10
+          lease-expiration-duration-in-seconds: 30
+          health-check-url-path: /actuator/health
+
+      bunsan:
+        discovery:
+          overload-filter:
+            enabled: true
+            cpu-threshold: ${cpu_threshold}
+            heap-threshold: ${heap_threshold}
+
+      management:
+        endpoints:
+          web:
+            exposure:
+              include: health,prometheus,info,lb-health
+        endpoint:
+          health:
+            show-details: always
+        prometheus:
+          metrics:
+            export:
+              enabled: true
+        metrics:
+          tags:
+            instance_id: demo-service-${instance_index}
+          distribution:
+            percentiles-histogram:
+              http.server.requests: true
+
+      logging:
+        level:
+          com.dmitrymrsh.bunsan: INFO
+
+runcmd:
+  - >
+    docker run -d
+    --name demo-service
+    --network=host
+    --restart=always
+    -v /config/application.yml:/config/application.yml:ro
+    -e SPRING_CONFIG_LOCATION=file:/config/application.yml
+    -e STRESS_ENABLED=${stress_enabled}
+    -e STRESS_DELAY_MS=${stress_delay_ms}
+    ${image}

@@ -120,13 +120,18 @@ public class LeastConnectionsLoadBalancer implements ReactorServiceInstanceLoadB
         log.debug("Chosen instance: serviceId={} instanceId={} inFlight={} candidates={}",
             serviceId, chosen.getInstanceId(), newCount, candidates.size());
 
-        // Публикуем gauge метрику (актуальное значение in-flight)
-        meterRegistry.gauge(
-            "bunsan_inflight_requests",
-            List.of(io.micrometer.core.instrument.Tag.of("instance_id", chosen.getInstanceId())),
-            connectionTracker,
-            ct -> ct.getInFlight(chosen.getInstanceId())
-        );
+        // Публикуем gauge для всех известных инстансов, чтобы они все были видны в Grafana.
+        // meterRegistry.gauge() идемпотентен — повторная регистрация того же id возвращает
+        // существующий gauge, поэтому функция-поставщик регистрируется лишь однажды.
+        for (ServiceInstance instance : instances) {
+            String id = instance.getInstanceId();
+            meterRegistry.gauge(
+                "bunsan_inflight_requests",
+                List.of(io.micrometer.core.instrument.Tag.of("instance_id", id)),
+                connectionTracker,
+                ct -> ct.getInFlight(id)
+            );
+        }
 
         return new DefaultResponse(chosen);
     }

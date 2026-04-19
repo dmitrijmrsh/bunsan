@@ -22,6 +22,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 /**
@@ -61,7 +62,7 @@ class AdaptiveLoadBalancerTest {
         latencyTracker = new LatencyTracker(0.3, 3);
         meterRegistry = new SimpleMeterRegistry();
 
-        when(supplierProvider.getIfAvailable(any())).thenReturn(supplier);
+        lenient().when(supplierProvider.getIfAvailable(any())).thenReturn(supplier);
 
         loadBalancer = new AdaptiveLoadBalancer(
             supplierProvider, SERVICE_ID, latencyTracker, meterRegistry, properties

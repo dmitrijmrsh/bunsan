@@ -1,0 +1,97 @@
+#cloud-config
+
+chpasswd:
+  list: |
+    ubuntu:Bunsan2026!
+  expire: false
+
+write_files:
+  - path: /config/application.yml
+    owner: root:root
+    permissions: '0644'
+    content: |
+      server:
+        port: 8080
+
+      spring:
+        application:
+          name: demo-gateway
+
+        cloud:
+          gateway:
+            server:
+              webflux:
+                routes:
+                  - id: demo-service-route
+                    uri: lb://demo-service
+                    predicates:
+                      - Path=/api/**
+                    filters:
+                      - AddRequestHeader=X-LB-Strategy, ${balancer_strategy}
+
+                discovery:
+                  locator:
+                    enabled: true
+                    lower-case-service-id: true
+
+          loadbalancer:
+            cache:
+              ttl: 5s
+
+      eureka:
+        client:
+          service-url:
+            defaultZone: http://${eureka_host}:8761/eureka/
+          registry-fetch-interval-seconds: 5
+        instance:
+          instance-id: demo-gateway:8080
+          prefer-ip-address: true
+
+      bunsan:
+        algorithm: ${balancer_strategy}
+
+        weighted-response-time:
+          ema-alpha: ${tuning.ema_alpha}
+          window-size: ${tuning.window_size}
+
+        least-connections:
+          tie-breaking: ${tuning.tie_breaking}
+
+        adaptive:
+          metrics-poll-interval: ${tuning.metrics_poll_interval}
+          weights:
+            cpu: ${tuning.adaptive_weights.cpu}
+            heap: ${tuning.adaptive_weights.heap}
+            threads: ${tuning.adaptive_weights.threads}
+            latency: ${tuning.adaptive_weights.latency}
+
+        discovery:
+          overload-filter:
+            enabled: ${filter_enabled}
+
+      management:
+        endpoints:
+          web:
+            exposure:
+              include: health,prometheus,info
+        prometheus:
+          metrics:
+            export:
+              enabled: true
+          tags:
+            instance_id: demo-gateway
+
+      logging:
+        level:
+          com.dmitrymrsh.bunsan: INFO
+          org.springframework.cloud.gateway: INFO
+
+runcmd:
+  - >
+    docker run -d
+    --name demo-gateway
+    --restart=always
+    -p 8080:8080
+    -v /config/application.yml:/config/application.yml:ro
+    -e SPRING_CONFIG_LOCATION=file:/config/application.yml
+    ${image}

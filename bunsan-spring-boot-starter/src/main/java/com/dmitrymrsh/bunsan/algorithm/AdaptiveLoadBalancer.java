@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Адаптивный балансировщик нагрузки на основе составного score.
@@ -72,6 +73,12 @@ public class AdaptiveLoadBalancer implements ReactorServiceInstanceLoadBalancer 
 
     /** Кэш снимков метрик: instanceId → последний InstanceHealthSnapshot. */
     private final ConcurrentHashMap<String, InstanceHealthSnapshot> healthCache = new ConcurrentHashMap<>();
+
+    /**
+     * Кэш score для публикации gauge-метрик: instanceId → AtomicReference<Double>.
+     * AtomicReference хранится как strong reference — Micrometer не соберёт его GC.
+     */
+    private final ConcurrentHashMap<String, AtomicReference<Double>> scoreRefs = new ConcurrentHashMap<>();
 
     /** Список инстансов из последнего вызова choose(). Используется фоновым планировщиком. */
     private volatile List<ServiceInstance> knownInstances = List.of();
@@ -148,7 +155,12 @@ public class AdaptiveLoadBalancer implements ReactorServiceInstanceLoadBalancer 
     }
 
     /**
-     * Выбирает инстанс с наименьшим score и публикует метрику.
+     * Выбирает инстанс с наименьшим score и публикует метрики для всех инстансов.
+     *
+     * <p>Для каждого инстанса лениво создаётся {@link AtomicReference} и регистрируется
+     * gauge, указывающий на него. Это гарантирует, что Micrometer не соберёт объект GC
+     * (в отличие от передачи {@code double} напрямую) и что все инстансы видны в Grafana,
+     * а не только выбранный.
      */
     private Response<ServiceInstance> pickBestInstance(List<ServiceInstance> instances) {
         long staleness = properties.getMetricsPollInterval().toSeconds() * 3L;
@@ -157,17 +169,26 @@ public class AdaptiveLoadBalancer implements ReactorServiceInstanceLoadBalancer 
             .min(Comparator.comparingDouble(i -> computeScore(i, staleness)))
             .orElse(instances.get(0));
 
-        double score = computeScore(chosen, staleness);
+        // Публикуем score для всех инстансов
+        for (ServiceInstance instance : instances) {
+            String instanceId = instance.getInstanceId();
+            double score = computeScore(instance, staleness);
 
-        // Публикуем gauge для Grafana/Prometheus
-        meterRegistry.gauge(
-            "bunsan_instance_score",
-            List.of(Tag.of("instance_id", chosen.getInstanceId())),
-            score
-        );
+            AtomicReference<Double> ref = scoreRefs.computeIfAbsent(instanceId, id -> {
+                AtomicReference<Double> newRef = new AtomicReference<>(score);
+                meterRegistry.gauge(
+                    "bunsan_instance_score",
+                    List.of(Tag.of("instance_id", id)),
+                    newRef,
+                    AtomicReference::get
+                );
+                return newRef;
+            });
+            ref.set(score);
+        }
 
         log.debug("Chosen instance: serviceId={} instanceId={} score={}",
-            serviceId, chosen.getInstanceId(), score);
+            serviceId, chosen.getInstanceId(), computeScore(chosen, staleness));
 
         return new DefaultResponse(chosen);
     }
